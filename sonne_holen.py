@@ -30,7 +30,7 @@ try:
     
     # Nächsten Punkt finden
     punkt = ds["SDU"].sel(x=x_ziel, y=y_ziel, method="nearest")
-    wert = float(punkt.values)
+    wert = float(punkt.values.squeeze())
     
     # Zeitstempel
     zeit_str = neueste.split("_")[4][:10]
@@ -46,3 +46,4 @@ try:
 
 except Exception as e:
     print(f"Fehler: {e}")
+    
