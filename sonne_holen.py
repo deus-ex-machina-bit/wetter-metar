@@ -33,7 +33,7 @@ try:
     wert = float(punkt.values.squeeze())
     
     # Zeitstempel
-    zeit_str = neueste.split("_")[4][:10]
+    zeit_str = neueste.split("_")[5][:10]
     
     neu = not os.path.exists(datei_csv)
     with open(datei_csv, "a", newline="") as f:
