@@ -19,7 +19,7 @@ jobs:
           python-version: '3.11'
       
       - name: Abhängigkeiten installieren
-        run: pip install requests xarray netCDF4 pyproj h5netcdf
+        run: pip install requests xarray netCDF4 pyproj h5netcdf h5py
       
       - name: Sonne abfragen
         run: python sonne_holen.py
