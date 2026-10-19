@@ -1,0 +1,28 @@
+name: METAR Abfrage
+
+on:
+  schedule:
+    - cron: '15 * * * *'   # jede Stunde um :15
+  workflow_dispatch:        # manuell startbar
+
+jobs:
+  metar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Python einrichten
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: METAR abfragen und speichern
+        run: python metar_holen.py
+      
+      - name: Änderungen committen
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add metar_werte.csv
+          git diff --staged --quiet || git commit -m "METAR Update"
+          git push
