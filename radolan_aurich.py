@@ -7,10 +7,11 @@ import os
 
 LAT = 53.46
 LON = 7.50
+CSV_PATH = "radolan_aurich.csv"
 
 def get_latest_radolan_url():
     now = datetime.utcnow()
-    for hours_back in range(0, 12):  # etwas weiter zurückschauen
+    for hours_back in range(0, 18):
         check_time = now - timedelta(hours=hours_back)
         year = check_time.strftime("%Y")
         date_str = check_time.strftime("%Y%m%d")
@@ -19,59 +20,55 @@ def get_latest_radolan_url():
         url = f"https://opendata.dwd.de/climate_environment/CDC/grids_germany/hourly/radolan/{year}/{filename}"
         try:
             req = urllib.request.Request(url, method="HEAD")
-            with urllib.request.urlopen(req, timeout=10) as resp:
+            with urllib.request.urlopen(req, timeout=15) as resp:
                 if resp.status == 200:
                     return url, check_time
         except Exception:
             continue
     return None, None
 
-def main():
-    csv_path = "radolan_aurich.csv"
-    url, timestamp = get_latest_radolan_url()
+def write_csv(zeitstempel, niederschlag):
+    header = "Zeitstempel;Niederschlag_mm\n"
+    zeile = f"{zeitstempel};{niederschlag}\n"
+    if not os.path.exists(CSV_PATH):
+        with open(CSV_PATH, "w") as f:
+            f.write(header)
+            f.write(zeile)
+        print(f"CSV neu angelegt: {zeitstempel} -> {niederschlag} mm")
+    else:
+        with open(CSV_PATH, "r") as f:
+            if zeitstempel in f.read():
+                print(f"Zeitstempel {zeitstempel} bereits vorhanden.")
+                return
+        with open(CSV_PATH, "a") as f:
+            f.write(zeile)
+        print(f"CSV aktualisiert: {zeitstempel} -> {niederschlag} mm")
 
+def main():
+    url, timestamp = get_latest_radolan_url()
     if not url:
-        print("Keine aktuelle RADOLAN-Datei gefunden. Erstelle leere CSV falls nötig.")
-        if not os.path.exists(csv_path):
-            with open(csv_path, "w") as f:
-                f.write("Zeitstempel;Niederschlag_mm\n")
-                f.write(f"{datetime.utcnow().strftime('%Y%m%d%H')};0.0\n")
+        print("Keine RADOLAN-Datei gefunden. Schreibe Platzhalter.")
+        write_csv(datetime.utcnow().strftime("%Y%m%d%H"), 0.0)
         return
 
     print(f"Lade: {url}")
     local_nc = "/tmp/radolan_temp.nc"
-    urllib.request.urlretrieve(url, local_nc)
-
-    ds = xr.open_dataset(local_nc)
-    val = ds["RW"].sel(latitude=LAT, longitude=LON, method="nearest").values
-    if isinstance(val, np.ndarray):
-        val = float(val.flat[0]) if val.size > 0 else 0.0
-    else:
-        val = float(val)
-
-    zeitstempel = timestamp.strftime("%Y%m%d%H")
-    niederschlag = round(val, 1)
-
-    header = "Zeitstempel;Niederschlag_mm\n"
-    zeile = f"{zeitstempel};{niederschlag}\n"
-
-    if not os.path.exists(csv_path):
-        with open(csv_path, "w") as f:
-            f.write(header)
-            f.write(zeile)
-    else:
-        with open(csv_path, "r") as f:
-            inhalt = f.read()
-        if zeitstempel not in inhalt:
-            with open(csv_path, "a") as f:
-                f.write(zeile)
+    try:
+        urllib.request.urlretrieve(url, local_nc)
+        ds = xr.open_dataset(local_nc)
+        val = ds["RW"].sel(latitude=LAT, longitude=LON, method="nearest").values
+        if isinstance(val, np.ndarray):
+            val = float(val.flat[0]) if val.size > 0 else 0.0
         else:
-            print(f"Zeitstempel {zeitstempel} bereits vorhanden.")
-
-    print(f"Gespeichert: {zeitstempel} -> {niederschlag} mm")
-
-    if os.path.exists(local_nc):
-        os.remove(local_nc)
+            val = float(val)
+        zeitstempel = timestamp.strftime("%Y%m%d%H")
+        write_csv(zeitstempel, round(val, 1))
+    except Exception as e:
+        print(f"Fehler beim Auslesen: {e}")
+        write_csv(datetime.utcnow().strftime("%Y%m%d%H"), 0.0)
+    finally:
+        if os.path.exists(local_nc):
+            os.remove(local_nc)
 
 if __name__ == "__main__":
     main()
