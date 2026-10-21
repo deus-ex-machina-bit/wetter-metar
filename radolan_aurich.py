@@ -47,7 +47,7 @@ def write_csv(zeitstempel, niederschlag):
 def main():
     url, timestamp = get_latest_radolan_url()
     if not url:
-        print("Keine RADOLAN-Datei gefunden. Schreibe Platzhalter.")
+        print("Keine RADOLAN-Datei gefunden.")
         write_csv(datetime.utcnow().strftime("%Y%m%d%H"), 0.0)
         return
 
@@ -56,19 +56,27 @@ def main():
     try:
         urllib.request.urlretrieve(url, local_nc)
         ds = xr.open_dataset(local_nc)
-        val = ds["RW"].sel(latitude=LAT, longitude=LON, method="nearest").values
-        if isinstance(val, np.ndarray):
-            val = float(val.flat[0]) if val.size > 0 else 0.0
-        else:
-            val = float(val)
+
+        # Nächsten Punkt und Umgebung ausgeben
+        point = ds["RW"].sel(latitude=LAT, longitude=LON, method="nearest")
+        print("Nächster Rasterpunkt:", float(point.latitude), float(point.longitude))
+        print("Wert am nächsten Punkt:", float(point.values))
+
+        # Kleine Umgebung (ca. 3x3 km) prüfen
+        area = ds["RW"].sel(
+            latitude=slice(LAT-0.02, LAT+0.02),
+            longitude=slice(LON-0.03, LON+0.03)
+        )
+        print("Maximalwert in der Umgebung:", float(area.max().values))
+        print("Mittelwert in der Umgebung:", float(area.mean().values))
+
+        val = float(point.values)
         zeitstempel = timestamp.strftime("%Y%m%d%H")
         write_csv(zeitstempel, round(val, 1))
+
     except Exception as e:
-        print(f"Fehler beim Auslesen: {e}")
+        print(f"Fehler: {e}")
         write_csv(datetime.utcnow().strftime("%Y%m%d%H"), 0.0)
     finally:
         if os.path.exists(local_nc):
             os.remove(local_nc)
-
-if __name__ == "__main__":
-    main()
