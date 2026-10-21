@@ -68,6 +68,23 @@ def main():
         print("Keys:", list(ds.keys()))
         print("Data variables:", list(ds.data_vars))
         
+        # RADOLAN-Rasterparameter (Standard 1 km Gitter)
+        data = ds["data"]
+        
+        # Grobe Schätzung für Aurich im 1200x1100 Raster
+        # (muss ggf. noch feinjustiert werden)
+        zeile = 420   # Nord-Süd (0 = Norden)
+        spalte = 180  # Ost-West (0 = Westen)
+        
+        wert = int(data.values[zeile, spalte])
+        # RADOLAN speichert meist in 0.1 mm
+        niederschlag = wert * 0.1
+        
+        print(f"Wert an Position [{zeile}, {spalte}]: {wert} -> {niederschlag} mm")
+        
+        zeitstempel = timestamp.strftime("%Y%m%d%H")
+        write_csv(zeitstempel, round(niederschlag, 1))
+        
     except Exception as e:
         print(f"Fehler: {e}")
         write_csv(datetime.utcnow().strftime("%Y%m%d%H"), 0.0)
