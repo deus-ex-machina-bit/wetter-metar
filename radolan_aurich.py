@@ -5,8 +5,8 @@ import numpy as np
 from datetime import datetime, timedelta
 import os
 
-LAT = 53.46
-LON = 7.50
+LAT = 53.47
+LON = 7.48
 CSV_PATH = "radolan_aurich.csv"
 
 def get_latest_radolan_url():
