@@ -84,3 +84,6 @@ def main():
     finally:
         if os.path.exists(local_nc):
             os.remove(local_nc)
+            
+if __name__ == "__main__":
+    main()
