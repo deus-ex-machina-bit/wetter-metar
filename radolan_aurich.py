@@ -58,20 +58,10 @@ def main():
         print("Datei geladen, öffne Dataset...")
         ds = xr.open_dataset(local_nc)
         
-        # ODIM_H5 Struktur
-        if "dataset1" in ds:
-            data = ds["dataset1"]["data1"]["data"]
-        else:
-            data = list(ds.data_vars.values())[0]
-        
-        print("Nächster Rasterpunkt wird gesucht...")
-        point = data.sel(latitude=LAT, longitude=LON, method="nearest")
-        print("Nächster Rasterpunkt:", float(point.latitude), float(point.longitude))
-        print("Wert am nächsten Punkt:", float(point.values))
-        
-        val = float(point.values)
-        zeitstempel = timestamp.strftime("%Y%m%d%H")
-        write_csv(zeitstempel, round(val, 1))
+        print("Dataset-Struktur:")
+        print(ds)
+        print("Keys:", list(ds.keys()))
+        print("Data variables:", list(ds.data_vars))
         
     except Exception as e:
         print(f"Fehler: {e}")
