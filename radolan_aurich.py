@@ -13,14 +13,16 @@ CSV_PATH = "radolan_aurich.csv"
 
 def get_latest_radolan_url():
     now = datetime.utcnow()
+    base_url = "https://opendata.dwd.de/weather/radar/radolan/rw/"
+    
     for hours_back in range(0, 18):
         check_time = now - timedelta(hours=hours_back)
-        year = check_time.strftime("%Y")
-        date_str = check_time.strftime("%Y%m%d")
-        hour_str = check_time.strftime("%H")
-        filename = f"{date_str}_{hour_str}0000_RW_1x1.nc"
-        url = f"https://opendata.dwd.de/climate_environment/CDC/grids_germany/hourly/radolan/{year}/{filename}"
+        # Format: yymmddHHMM (z.B. 2610200000 für 20.10.2026 00:00)
+        timestamp = check_time.strftime("%y%m%d%H00")
+        filename = f"raa01-rw_10000-{timestamp}-dwd---bin.hdf5"
+        url = base_url + filename
         print(f"Prüfe: {url}")
+        
         try:
             req = urllib.request.Request(url, method="HEAD")
             with urllib.request.urlopen(req, timeout=15) as resp:
