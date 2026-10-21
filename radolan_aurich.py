@@ -5,6 +5,8 @@ import numpy as np
 from datetime import datetime, timedelta
 import os
 
+print("Skript wird geladen...")
+
 LAT = 53.47
 LON = 7.48
 CSV_PATH = "radolan_aurich.csv"
