@@ -23,6 +23,9 @@ jobs:
       
       - name: Sonne abfragen
         run: python sonne_holen.py
+
+      - name: Open-Meteo Sonnenscheindauer holen
+        run: python sonne_openmeteo.py
       
       - name: Änderungen committen
         run: |
