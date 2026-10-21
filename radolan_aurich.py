@@ -17,7 +17,6 @@ def get_latest_radolan_url():
     
     for hours_back in range(0, 18):
         check_time = now - timedelta(hours=hours_back)
-        # Format: yymmddHHMM (z.B. 2610200000 für 20.10.2026 00:00)
         timestamp = check_time.strftime("%y%m%d%H00")
         filename = f"raa01-rw_10000-{timestamp}-dwd---bin.hdf5"
         url = base_url + filename
@@ -38,55 +37,48 @@ def write_csv(zeitstempel, niederschlag):
     if not os.path.exists(CSV_PATH):
         with open(CSV_PATH, "w") as f:
             f.write(header)
-            f.write(zeile)
-        print(f"CSV neu angelegt: {zeitstempel} -> {niederschlag} mm")
-    else:
-        with open(CSV_PATH, "r") as f:
-            if zeitstempel in f.read():
-                print(f"Zeitstempel {zeitstempel} bereits vorhanden.")
-                return
-        with open(CSV_PATH, "a") as f:
-            f.write(zeile)
-        print(f"CSV aktualisiert: {zeitstempel} -> {niederschlag} mm")
+    with open(CSV_PATH, "a") as f:
+        f.write(zeile)
+    print(f"CSV aktualisiert: {zeitstempel} -> {niederschlag} mm")
 
 def main():
     print("Skript gestartet")
     url, timestamp = get_latest_radolan_url()
+    
     if not url:
         print("Keine RADOLAN-Datei gefunden.")
         write_csv(datetime.utcnow().strftime("%Y%m%d%H"), 0.0)
         return
-
+    
     print(f"Lade: {url}")
     local_nc = "/tmp/radolan_temp.nc"
+    
     try:
         urllib.request.urlretrieve(url, local_nc)
         print("Datei geladen, öffne Dataset...")
         ds = xr.open_dataset(local_nc)
-
-        # Nächsten Punkt und Umgebung ausgeben
-        point = ds["RW"].sel(latitude=LAT, longitude=LON, method="nearest")
+        
+        # ODIM_H5 Struktur
+        if "dataset1" in ds:
+            data = ds["dataset1"]["data1"]["data"]
+        else:
+            data = list(ds.data_vars.values())[0]
+        
+        print("Nächster Rasterpunkt wird gesucht...")
+        point = data.sel(latitude=LAT, longitude=LON, method="nearest")
         print("Nächster Rasterpunkt:", float(point.latitude), float(point.longitude))
         print("Wert am nächsten Punkt:", float(point.values))
-
-        # Kleine Umgebung (ca. 3x3 km) prüfen
-        area = ds["RW"].sel(
-            latitude=slice(LAT-0.02, LAT+0.02),
-            longitude=slice(LON-0.03, LON+0.03)
-        )
-        print("Maximalwert in der Umgebung:", float(area.max().values))
-        print("Mittelwert in der Umgebung:", float(area.mean().values))
-
+        
         val = float(point.values)
         zeitstempel = timestamp.strftime("%Y%m%d%H")
         write_csv(zeitstempel, round(val, 1))
-
+        
     except Exception as e:
         print(f"Fehler: {e}")
         write_csv(datetime.utcnow().strftime("%Y%m%d%H"), 0.0)
     finally:
         if os.path.exists(local_nc):
             os.remove(local_nc)
-            
+
 if __name__ == "__main__":
     main()
