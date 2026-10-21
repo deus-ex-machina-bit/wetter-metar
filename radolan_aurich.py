@@ -20,6 +20,7 @@ def get_latest_radolan_url():
         hour_str = check_time.strftime("%H")
         filename = f"{date_str}_{hour_str}0000_RW_1x1.nc"
         url = f"https://opendata.dwd.de/climate_environment/CDC/grids_germany/hourly/radolan/{year}/{filename}"
+        print(f"Prüfe: {url}")
         try:
             req = urllib.request.Request(url, method="HEAD")
             with urllib.request.urlopen(req, timeout=15) as resp:
