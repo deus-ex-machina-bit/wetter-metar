@@ -33,11 +33,21 @@ def get_latest_radolan_url():
     return None, None
 
 def write_csv(zeitstempel, niederschlag):
+    # Prüfen, ob der Zeitstempel schon existiert
+    if os.path.exists(CSV_PATH):
+        with open(CSV_PATH, "r") as f:
+            inhalt = f.read()
+            if zeitstempel in inhalt:
+                print(f"Zeitstempel {zeitstempel} bereits vorhanden, überspringe.")
+                return
+    
     header = "Zeitstempel;Niederschlag_mm\n"
     zeile = f"{zeitstempel};{niederschlag}\n"
+    
     if not os.path.exists(CSV_PATH):
         with open(CSV_PATH, "w") as f:
             f.write(header)
+    
     with open(CSV_PATH, "a") as f:
         f.write(zeile)
     print(f"CSV aktualisiert: {zeitstempel} -> {niederschlag} mm")
@@ -48,7 +58,6 @@ def main():
     
     if not url:
         print("Keine RADOLAN-Datei gefunden.")
-        write_csv(datetime.utcnow().strftime("%Y%m%d%H"), 0.0)
         return
     
     print(f"Lade: {url}")
@@ -66,12 +75,10 @@ def main():
         data = ds["data"].values
         
         # Korrekte Position mit wradlib berechnen
-        # RADOLAN-Gitterkoordinaten holen (1200 x 1100)
         radolan_grid = wrl.georef.get_radolan_grid(nrows=1200, ncols=1100, wgs84=True)
         lon_grid = radolan_grid[..., 0]
         lat_grid = radolan_grid[..., 1]
         
-        # Nächsten Punkt zu Aurich finden
         dist = np.sqrt((lat_grid - LAT)**2 + (lon_grid - LON)**2)
         zeile, spalte = np.unravel_index(np.argmin(dist), dist.shape)
         
@@ -91,7 +98,6 @@ def main():
         
     except Exception as e:
         print(f"Fehler: {e}")
-        write_csv(datetime.utcnow().strftime("%Y%m%d%H"), 0.0)
     finally:
         if os.path.exists(local_nc):
             os.remove(local_nc)
