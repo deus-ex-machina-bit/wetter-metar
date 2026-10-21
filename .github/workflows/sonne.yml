@@ -31,6 +31,6 @@ jobs:
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add sonne_werte.csv
+          git add sonne_werte.csv sonne_openmeteo.csv
           git diff --staged --quiet || git commit -m "Sonne Update"
           git push
