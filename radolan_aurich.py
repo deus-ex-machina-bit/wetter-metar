@@ -45,6 +45,7 @@ def write_csv(zeitstempel, niederschlag):
         print(f"CSV aktualisiert: {zeitstempel} -> {niederschlag} mm")
 
 def main():
+    print("Skript gestartet")
     url, timestamp = get_latest_radolan_url()
     if not url:
         print("Keine RADOLAN-Datei gefunden.")
@@ -55,6 +56,7 @@ def main():
     local_nc = "/tmp/radolan_temp.nc"
     try:
         urllib.request.urlretrieve(url, local_nc)
+        print("Datei geladen, öffne Dataset...")
         ds = xr.open_dataset(local_nc)
 
         # Nächsten Punkt und Umgebung ausgeben
