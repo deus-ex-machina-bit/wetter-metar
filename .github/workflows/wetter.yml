@@ -24,7 +24,7 @@ jobs:
           pip install xarray netCDF4
 
       - name: RADOLAN für Aurich holen
-        run: python radolan_aurich.py
+        run: python -u radolan_aurich.py
 
       - name: Änderungen committen
         run: |
