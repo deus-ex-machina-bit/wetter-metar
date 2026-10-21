@@ -56,7 +56,12 @@ def main():
     try:
         urllib.request.urlretrieve(url, local_nc)
         print("Datei geladen, öffne Dataset...")
-        ds = xr.open_dataset(local_nc)
+        
+        # ODIM_H5 hat Untergruppen – wir öffnen die Datengruppe direkt
+        try:
+            ds = xr.open_dataset(local_nc, group="dataset1/data1")
+        except Exception:
+            ds = xr.open_dataset(local_nc)
         
         print("Dataset-Struktur:")
         print(ds)
