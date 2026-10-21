@@ -2,6 +2,7 @@
 import urllib.request
 import xarray as xr
 import numpy as np
+import wradlib as wrl
 from datetime import datetime, timedelta
 import os
 
@@ -57,38 +58,33 @@ def main():
         urllib.request.urlretrieve(url, local_nc)
         print("Datei geladen, öffne Dataset...")
         
-        # ODIM_H5 hat Untergruppen – wir öffnen die Datengruppe direkt
         try:
             ds = xr.open_dataset(local_nc, group="dataset1/data1")
         except Exception:
             ds = xr.open_dataset(local_nc)
         
-        print("Dataset-Struktur:")
-        print(ds)
-        print("Keys:", list(ds.keys()))
-        print("Data variables:", list(ds.data_vars))
+        data = ds["data"].values
         
-        # RADOLAN-Rasterparameter (Standard 1 km Gitter)
-        data = ds["data"]
+        # Korrekte Position mit wradlib berechnen
+        # RADOLAN-Gitterkoordinaten holen (1200 x 1100)
+        radolan_grid = wrl.georef.get_radolan_grid(nrows=1200, ncols=1100, wgs84=True)
+        lon_grid = radolan_grid[..., 0]
+        lat_grid = radolan_grid[..., 1]
         
-        # Mehrere Positionen um Aurich herum prüfen
-        positionen = [
-            (420, 180),
-            (400, 200),
-            (450, 150),
-            (380, 220),
-            (460, 160),
-        ]
+        # Nächsten Punkt zu Aurich finden
+        dist = np.sqrt((lat_grid - LAT)**2 + (lon_grid - LON)**2)
+        zeile, spalte = np.unravel_index(np.argmin(dist), dist.shape)
         
-        niederschlag = 0.0
-        for zeile, spalte in positionen:
-            if 0 <= zeile < data.shape[0] and 0 <= spalte < data.shape[1]:
-                wert = int(data.values[zeile, spalte])
-                print(f"Position [{zeile}, {spalte}]: {wert}")
-                if wert != 65535 and wert > 0:
-                    niederschlag = wert * 0.1
-                    print(f"Gültiger Wert gefunden: {niederschlag} mm")
-                    break
+        wert = int(data[zeile, spalte])
+        print(f"Nächster Punkt: Zeile {zeile}, Spalte {spalte}")
+        print(f"Rohwert: {wert}")
+        
+        if wert == 65535 or wert < 0:
+            niederschlag = 0.0
+        else:
+            niederschlag = wert * 0.1
+        
+        print(f"Niederschlag: {niederschlag} mm")
         
         zeitstempel = timestamp.strftime("%Y%m%d%H")
         write_csv(zeitstempel, round(niederschlag, 1))
